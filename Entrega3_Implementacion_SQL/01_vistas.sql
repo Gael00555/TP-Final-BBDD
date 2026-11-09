@@ -1,19 +1,20 @@
 CREATE OR REPLACE VIEW vw_servicios_disponibles AS
-SELECT 
+SELECT
     cs.idCentro,
     cs.nombre AS centro_salud,
+    s.idServicio,
     ts.idTipoServicio,
     ts.nombre AS servicio,
     ts.descripcion
 FROM CentroDeSalud cs
 JOIN Servicio s ON cs.idCentro = s.idCentro
 JOIN TipoServicio ts ON s.idTipoServicio = ts.idTipoServicio;
-
+ 
 CREATE OR REPLACE VIEW vw_historial_visitas AS
-SELECT 
+SELECT
     p.idPaciente,
     p.dni,
-    p.apellidos || ', ' || p.nombres AS paciente_completo,
+    p.apellido || ', ' || p.nombre AS paciente_completo,
     v.fechaVisita,
     prof.apellido || ', ' || prof.nombre AS medico,
     ts.nombre AS servicio,
@@ -21,15 +22,16 @@ SELECT
     v.tratamiento
 FROM Paciente p
 JOIN Visita v ON p.idPaciente = v.idPaciente
-JOIN Profesional prof ON v.idMedico = prof.idProfesional
+JOIN Profesional prof ON v.idProfesional = prof.idProfesional
 JOIN Servicio s ON v.idServicio = s.idServicio
 JOIN TipoServicio ts ON s.idTipoServicio = ts.idTipoServicio;
-
+ 
 CREATE OR REPLACE VIEW vw_pacientes_internados AS
-SELECT 
+SELECT
     i.idInternacion,
+    p.idPaciente,
     p.dni,
-    p.apellidos || ', ' || p.nombres AS paciente_completo,
+    p.apellido || ', ' || p.nombre AS paciente_completo,
     i.fechaIngreso,
     cs.nombre AS centro_salud
 FROM Internacion i
