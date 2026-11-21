@@ -1,0 +1,17 @@
+admin_salud: puede consultar, insertar, modificar y borrar en todas las tablas
+CREATE USER admin_salud PASSWORD 'Admin2026' VALID UNTIL '2027-12-31';
+GRANT ALL ON Departamento, Ciudad, Barrio, CentroDeSalud, ObraSocial, Paciente,
+    Especializacion, Profesional, ProfesionalEspecializacion, TipoServicio,
+    RequisitoServicio, Servicio, AsignacionServicio, HorarioAtencion, Visita,
+    Internacion TO admin_salud;
+GRANT SELECT ON vw_servicios_disponibles, vw_historial_visitas,
+    vw_pacientes_internados TO admin_salud;
+
+consulta_salud: solo puede consultar tablas y vistas
+CREATE USER consulta_salud PASSWORD 'Consulta2026' VALID UNTIL '2027-12-31';
+GRANT SELECT ON Departamento, Ciudad, Barrio, CentroDeSalud, ObraSocial, Paciente,
+    Especializacion, Profesional, ProfesionalEspecializacion, TipoServicio,
+    RequisitoServicio, Servicio, AsignacionServicio, HorarioAtencion, Visita,
+    Internacion TO consulta_salud;
+GRANT SELECT ON vw_servicios_disponibles, vw_historial_visitas,
+    vw_pacientes_internados TO consulta_salud;
