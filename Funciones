@@ -1,0 +1,131 @@
+-- ---------------------------------------------------------------------
+-- A_ Cantidad de pacientes con un diagnostico determinado de cada ciudad
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_a(p_diagnostico VARCHAR)
+RETURNS TABLE (ciudad VARCHAR, pacientes BIGINT)
+AS
+$$
+    SELECT v.ciudad, COUNT(DISTINCT v.idPaciente)
+    FROM vw_historial_visitas v
+    WHERE v.diagnostico = p_diagnostico
+    GROUP BY v.idCiudad, v.ciudad
+    ORDER BY v.ciudad;
+$$
+LANGUAGE sql;
+
+-- ---------------------------------------------------------------------
+-- B_ Centros de salud con un servicio determinado abiertos a la hora y
+-- dia actual de consulta
+-- Si el servicio tiene horario propio rige ese; si no tiene, rige el horario del centro.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_b(
+    p_servicio VARCHAR,
+    p_dia DiaSemana DEFAULT (ARRAY['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'])[EXTRACT(ISODOW FROM CURRENT_DATE)::int]::DiaSemana,
+    p_hora TIME DEFAULT LOCALTIME)
+RETURNS TABLE (idCentro INT, centro_salud VARCHAR, barrio VARCHAR, ciudad VARCHAR, servicio VARCHAR)
+AS
+$$
+    SELECT v.idCentro, v.centro_salud, v.barrio, v.ciudad, v.servicio
+    FROM vw_servicios_disponibles v
+    WHERE v.servicio = p_servicio
+      AND (v.idServicio IN (SELECT h.idServicio
+                            FROM HorarioAtencion h
+                            WHERE h.idServicio IS NOT NULL
+                              AND h.diaSemana = p_dia
+                              AND h.horaApertura <= p_hora
+                              AND p_hora < h.horaCierre)
+           OR (v.idServicio NOT IN (SELECT h.idServicio
+                                    FROM HorarioAtencion h
+                                    WHERE h.idServicio IS NOT NULL)
+               AND v.idCentro IN (SELECT h.idCentro
+                                  FROM HorarioAtencion h
+                                  WHERE h.idCentro IS NOT NULL
+                                    AND h.diaSemana = p_dia
+                                    AND h.horaApertura <= p_hora
+                                    AND p_hora < h.horaCierre)))
+    ORDER BY v.ciudad, v.centro_salud;
+$$
+LANGUAGE sql;
+
+-- ---------------------------------------------------------------------
+-- C_ El medico con mayor cantidad de pacientes atendidos de cada centro,
+-- organizados por barrio
+-- Cuenta pacientes distintos. Si hay empate, devuelve a todos los medicos
+-- empatados.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_c()
+RETURNS TABLE (ciudad VARCHAR, barrio VARCHAR, centro_salud VARCHAR, medico TEXT, pacientes BIGINT)
+AS
+$$
+    SELECT t.ciudad, t.barrio, t.centro_salud, t.medico, t.pacientes
+    FROM (SELECT h.idCiudad, h.ciudad, h.idBarrio, h.barrio, h.idCentro, h.centro_salud,
+                 h.idProfesional, h.medico, COUNT(DISTINCT h.idPaciente) AS pacientes
+          FROM vw_historial_visitas h
+          GROUP BY h.idCiudad, h.ciudad, h.idBarrio, h.barrio, h.idCentro, h.centro_salud,
+                   h.idProfesional, h.medico) t
+    WHERE t.pacientes = (SELECT MAX(m.pacientes)
+                         FROM (SELECT h2.idCentro, h2.idProfesional, COUNT(DISTINCT h2.idPaciente) AS pacientes
+                               FROM vw_historial_visitas h2
+                               GROUP BY h2.idCentro, h2.idProfesional) m
+                         WHERE m.idCentro = t.idCentro)
+    ORDER BY t.ciudad, t.barrio, t.centro_salud, t.medico;
+$$
+LANGUAGE sql;
+
+-- ---------------------------------------------------------------------
+-- D_ Centro de salud con mayor cantidad de servicios de cada barrio
+-- Si hay empate, devuelve a todos los centros empatados.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_d()
+RETURNS TABLE (ciudad VARCHAR, barrio VARCHAR, centro_salud VARCHAR, servicios BIGINT)
+AS
+$$
+    SELECT t.ciudad, t.barrio, t.centro_salud, t.servicios
+    FROM (SELECT s.idCiudad, s.ciudad, s.idBarrio, s.barrio, s.idCentro, s.centro_salud, COUNT(*) AS servicios
+          FROM vw_servicios_disponibles s
+          GROUP BY s.idCiudad, s.ciudad, s.idBarrio, s.barrio, s.idCentro, s.centro_salud) t
+    WHERE t.servicios = (SELECT MAX(m.servicios)
+                         FROM (SELECT s2.idBarrio, s2.idCentro, COUNT(*) AS servicios
+                               FROM vw_servicios_disponibles s2
+                               GROUP BY s2.idBarrio, s2.idCentro) m
+                         WHERE m.idBarrio = t.idBarrio)
+    ORDER BY t.ciudad, t.barrio, t.centro_salud;
+$$
+LANGUAGE sql;
+
+-- ---------------------------------------------------------------------
+-- E_ Los 10 pacientes con mayor cantidad de ingresos a centros de salud
+-- en el ultimo mes
+-- Un ingreso es una internacion (fechaIngreso). Ordena por cantidad de
+-- ingresos y, en caso de igualdad, por apellido y nombre.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_e()
+RETURNS TABLE (idPaciente INT, dni VARCHAR, paciente TEXT, ingresos BIGINT)
+AS
+$$
+    SELECT p.idPaciente, p.dni, p.apellido || ', ' || p.nombre, COUNT(*)
+    FROM Paciente p, Visita v, Internacion i
+    WHERE v.idPaciente = p.idPaciente
+      AND i.idVisita = v.idVisita
+      AND i.fechaIngreso >= CURRENT_DATE - INTERVAL '1 month'
+    GROUP BY p.idPaciente, p.dni, p.apellido, p.nombre
+    ORDER BY COUNT(*) DESC, p.apellido, p.nombre
+    LIMIT 10;
+$$
+LANGUAGE sql;
+
+-- ---------------------------------------------------------------------
+-- F_ Cantidad de pacientes con menos de 5 atenciones en los ultimos 6
+-- meses que se encuentren actualmente internados en algun centro
+-- Las atenciones son todas las visitas de los ultimos 6 meses, incluida
+-- la que origino la internacion.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_f()
+RETURNS BIGINT
+AS
+$$
+    SELECT COUNT(*)
+    FROM vw_pacientes_internados
+    WHERE atenciones_6_meses < 5;
+$$
+LANGUAGE sql;
