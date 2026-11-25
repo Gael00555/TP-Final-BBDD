@@ -10,11 +10,11 @@ SELECT
     b.nombre AS barrio,
     c.idCiudad,
     c.nombre AS ciudad
-FROM CentroDeSalud cs
-JOIN Servicio s ON cs.idCentro = s.idCentro
-JOIN TipoServicio ts ON s.idTipoServicio = ts.idTipoServicio
-JOIN Barrio b ON cs.idBarrio = b.idBarrio
-JOIN Ciudad c ON b.idCiudad = c.idCiudad;
+FROM CentroDeSalud cs, Servicio s, TipoServicio ts, Barrio b, Ciudad c
+WHERE cs.idCentro = s.idCentro
+  AND s.idTipoServicio = ts.idTipoServicio
+  AND cs.idBarrio = b.idBarrio
+  AND b.idCiudad = c.idCiudad;
 
 CREATE OR REPLACE VIEW vw_historial_visitas AS
 SELECT
@@ -34,14 +34,15 @@ SELECT
     b.nombre AS barrio,
     c.idCiudad,
     c.nombre AS ciudad
-FROM Paciente p
-JOIN Visita v ON p.idPaciente = v.idPaciente
-JOIN Profesional prof ON v.idProfesional = prof.idProfesional
-JOIN Servicio s ON v.idServicio = s.idServicio
-JOIN TipoServicio ts ON s.idTipoServicio = ts.idTipoServicio
-JOIN CentroDeSalud cs ON s.idCentro = cs.idCentro
-JOIN Barrio b ON cs.idBarrio = b.idBarrio
-JOIN Ciudad c ON b.idCiudad = c.idCiudad;
+FROM Paciente p, Visita v, Profesional prof, Servicio s,
+     TipoServicio ts, CentroDeSalud cs, Barrio b, Ciudad c
+WHERE p.idPaciente = v.idPaciente
+  AND v.idProfesional = prof.idProfesional
+  AND v.idServicio = s.idServicio
+  AND s.idTipoServicio = ts.idTipoServicio
+  AND s.idCentro = cs.idCentro
+  AND cs.idBarrio = b.idBarrio
+  AND b.idCiudad = c.idCiudad;
 
 CREATE OR REPLACE VIEW vw_pacientes_internados AS
 SELECT
@@ -55,9 +56,9 @@ SELECT
      FROM Visita v2
      WHERE v2.idPaciente = p.idPaciente
        AND v2.fechaVisita >= CURRENT_DATE - INTERVAL '6 months') AS atenciones_6_meses
-FROM Internacion i
-JOIN Visita v ON i.idVisita = v.idVisita
-JOIN Paciente p ON v.idPaciente = p.idPaciente
-JOIN Servicio s ON v.idServicio = s.idServicio
-JOIN CentroDeSalud cs ON s.idCentro = cs.idCentro
-WHERE i.fechaEgreso IS NULL;
+FROM Internacion i, Visita v, Paciente p, Servicio s, CentroDeSalud cs
+WHERE i.idVisita = v.idVisita
+  AND v.idPaciente = p.idPaciente
+  AND v.idServicio = s.idServicio
+  AND s.idCentro = cs.idCentro
+  AND i.fechaEgreso IS NULL;
