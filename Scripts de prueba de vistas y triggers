@@ -1,0 +1,112 @@
+-- Vista: vw_servicios_disponibles
+SELECT COUNT(*) FROM vw_servicios_disponibles;
+
+SELECT servicio, barrio, ciudad
+FROM vw_servicios_disponibles
+WHERE centro_salud = 'Hospital Escuela Parana'
+ORDER BY servicio;
+
+-- Vista: vw_historial_visitas
+SELECT COUNT(*) FROM vw_historial_visitas;
+
+SELECT paciente_completo, CURRENT_DATE - fechaVisita AS dias_atras, medico, servicio, centro_salud, diagnostico
+FROM vw_historial_visitas
+WHERE idPaciente = 5
+ORDER BY fechaVisita;
+
+-- Vista: vw_pacientes_internados
+SELECT paciente_completo, CURRENT_DATE - fechaIngreso AS dias_internado, centro_salud, atenciones_6_meses
+FROM vw_pacientes_internados
+ORDER BY paciente_completo;
+
+-- Trigger: trg_servicio_medico_a_cargo
+INSERT INTO Servicio VALUES (39, 2, 9, 6);
+
+INSERT INTO Servicio VALUES (39, 21, 9, 6);
+
+INSERT INTO Servicio VALUES (39, 6, 9, 6);
+
+UPDATE Servicio SET idProfesional = 21 WHERE idServicio = 39;
+
+UPDATE Servicio SET idProfesional = 14 WHERE idServicio = 39;
+
+DELETE FROM Servicio WHERE idServicio = 39;
+
+-- Trigger: trg_asignacion_especializacion
+INSERT INTO AsignacionServicio VALUES (60, 6, 5);
+
+INSERT INTO AsignacionServicio VALUES (60, 2, 5);
+
+INSERT INTO AsignacionServicio VALUES (60, 21, 21);
+
+INSERT INTO AsignacionServicio VALUES (60, 21, 5);
+
+UPDATE AsignacionServicio SET idProfesional = 6 WHERE idAsignacion = 60;
+
+UPDATE AsignacionServicio SET idServicio = 6 WHERE idAsignacion = 60;
+
+DELETE FROM AsignacionServicio WHERE idAsignacion = 60;
+
+-- Trigger: trg_visita_valida
+INSERT INTO Visita VALUES (77, CURRENT_DATE - 1, 'Control', 'Reposo', 16, 1, 1);
+
+INSERT INTO Visita VALUES (78, CURRENT_DATE - 1, 'Control', 'Reposo', 10, 1, 1);
+
+INSERT INTO Visita VALUES (79, CURRENT_DATE - 1, 'Control', 'Reposo', 21, 1, 1);
+
+INSERT INTO Visita VALUES (79, CURRENT_DATE - 1, 'Control', 'Reposo', 2, 1, 1);
+
+INSERT INTO Visita VALUES (79, CURRENT_DATE + 5, 'Control', 'Reposo', 10, 1, 1);
+
+UPDATE Visita SET idProfesional = 2 WHERE idVisita = 77;
+
+UPDATE Visita SET idProfesional = 10 WHERE idVisita = 77;
+
+DELETE FROM Visita WHERE idVisita = 78;
+
+DELETE FROM Visita WHERE idVisita = 77;
+
+-- Trigger: trg_internacion_valida
+INSERT INTO Internacion VALUES (18, CURRENT_DATE - 2, NULL, 6);
+
+INSERT INTO Internacion VALUES (18, CURRENT_DATE - 2, CURRENT_DATE - 5, 6);
+
+INSERT INTO Internacion VALUES (18, CURRENT_DATE - 3, NULL, 1);
+
+UPDATE Internacion SET fechaEgreso = CURRENT_DATE - 10 WHERE idInternacion = 18;
+
+UPDATE Internacion SET fechaEgreso = CURRENT_DATE WHERE idInternacion = 18;
+
+DELETE FROM Internacion WHERE idInternacion = 18;
+
+-- Trigger: trg_horario_servicio
+INSERT INTO HorarioAtencion VALUES (130, 'Lunes', '09:00', '12:00', NULL, 8);
+
+INSERT INTO HorarioAtencion VALUES (131, 'Lunes', '07:00', '12:00', NULL, 8);
+
+INSERT INTO HorarioAtencion VALUES (131, 'Sabado', '09:00', '12:00', NULL, 8);
+
+UPDATE HorarioAtencion SET horaCierre = '19:00' WHERE idHorario = 130;
+
+UPDATE HorarioAtencion SET horaCierre = '10:30' WHERE idHorario = 1;
+
+UPDATE HorarioAtencion SET horaApertura = '07:00', horaCierre = '19:00' WHERE idHorario = 1;
+
+UPDATE HorarioAtencion SET horaApertura = '08:00', horaCierre = '18:00' WHERE idHorario = 1;
+
+DELETE FROM HorarioAtencion WHERE idHorario = 1;
+
+DELETE FROM HorarioAtencion WHERE idHorario = 130;
+
+DELETE FROM HorarioAtencion WHERE idHorario = 41;
+
+INSERT INTO HorarioAtencion VALUES (41, 'Sabado', '00:00', '23:59', 8, NULL);
+
+
+
+
+
+
+
+
+
