@@ -1,23 +1,23 @@
 -- Vista: vw_servicios_disponibles
-SELECT COUNT(*) FROM vw_servicios_disponibles;
-
-SELECT servicio, barrio, ciudad
-FROM vw_servicios_disponibles
-WHERE centro_salud = 'Hospital Escuela Parana'
-ORDER BY servicio;
-
+D)SELECT * FROM (SELECT DISTINCT ON (idBarrio)ciudad,barrio,centro_salud,COUNT(idServicio) AS cantidad_servicios
+    FROM vw_servicios_disponibles
+    GROUP BY idCiudad, ciudad, idBarrio, barrio, idCentro, centro_salud
+    ORDER BY idBarrio, cantidad_servicios DESC
+) 
+ORDER BY ciudad, barrio;
 -- Vista: vw_historial_visitas
-SELECT COUNT(*) FROM vw_historial_visitas;
-
-SELECT paciente_completo, CURRENT_DATE - fechaVisita AS dias_atras, medico, servicio, centro_salud, diagnostico
+A)SELECT ciudad, COUNT(DISTINCT idPaciente) AS cantidad_pacientes
 FROM vw_historial_visitas
-WHERE idPaciente = 5
-ORDER BY fechaVisita;
-
+WHERE diagnostico = 'Gripe' -- reemplazar por el diagnóstico buscado
+GROUP BY idCiudad, ciudad
+ORDER BY ciudad;
+C)SELECT * FROM (SELECT DISTINCT ON (idCentro)barrio,centro_salud,medico,COUNT(DISTINCT idPaciente) AS pacientes_atendidos
+    FROM vw_historial_visitas
+    GROUP BY idBarrio, barrio, idCentro, centro_salud, idProfesional, medico
+    ORDER BY idCentro, pacientes_atendidos DESC
+) 
+ORDER BY barrio, centro_salud;
 -- Vista: vw_pacientes_internados
-SELECT paciente_completo, CURRENT_DATE - fechaIngreso AS dias_internado, centro_salud, atenciones_6_meses
-FROM vw_pacientes_internados
-ORDER BY paciente_completo;
 
 -- Trigger: trg_servicio_medico_a_cargo
 INSERT INTO Servicio VALUES (39, 2, 9, 6);
