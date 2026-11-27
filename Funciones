@@ -13,39 +13,6 @@ $$
 $$
 LANGUAGE sql;
 
--- ---------------------------------------------------------------------
--- B_ Centros de salud con un servicio determinado abiertos a la hora y
--- dia actual de consulta
--- Si el servicio tiene horario propio rige ese; si no tiene, rige el horario del centro.
--- ---------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION func_consulta_b(
-    p_servicio VARCHAR,
-    p_dia DiaSemana DEFAULT (ARRAY['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'])[EXTRACT(ISODOW FROM CURRENT_DATE)::int]::DiaSemana,
-    p_hora TIME DEFAULT LOCALTIME)
-RETURNS TABLE (idCentro INT, centro_salud VARCHAR, barrio VARCHAR, ciudad VARCHAR, servicio VARCHAR)
-AS
-$$
-    SELECT v.idCentro, v.centro_salud, v.barrio, v.ciudad, v.servicio
-    FROM vw_servicios_disponibles v
-    WHERE v.servicio = p_servicio
-      AND (v.idServicio IN (SELECT h.idServicio
-                            FROM HorarioAtencion h
-                            WHERE h.idServicio IS NOT NULL
-                              AND h.diaSemana = p_dia
-                              AND h.horaApertura <= p_hora
-                              AND p_hora < h.horaCierre)
-           OR (v.idServicio NOT IN (SELECT h.idServicio
-                                    FROM HorarioAtencion h
-                                    WHERE h.idServicio IS NOT NULL)
-               AND v.idCentro IN (SELECT h.idCentro
-                                  FROM HorarioAtencion h
-                                  WHERE h.idCentro IS NOT NULL
-                                    AND h.diaSemana = p_dia
-                                    AND h.horaApertura <= p_hora
-                                    AND p_hora < h.horaCierre)))
-    ORDER BY v.ciudad, v.centro_salud;
-$$
-LANGUAGE sql;
 
 -- ---------------------------------------------------------------------
 -- C_ El medico con mayor cantidad de pacientes atendidos de cada centro,
