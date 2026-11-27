@@ -1,3 +1,15 @@
+
+Sin vista:
+E)SELECT p.idPaciente, p.dni, p.apellido || ', ' || p.nombre AS paciente, COUNT(*) AS ingresos
+FROM Paciente p, Visita v, Internacion i
+WHERE v.idPaciente = p.idPaciente
+  AND i.idVisita = v.idVisita
+  AND i.fechaIngreso >= CURRENT_DATE - INTERVAL '1 month'
+GROUP BY p.idPaciente, p.dni, p.apellido, p.nombre
+ORDER BY ingresos DESC, p.apellido, p.nombre
+LIMIT 10;
+
+
 -- Vista: vw_servicios_disponibles
 D)SELECT * FROM (SELECT DISTINCT ON (idBarrio)ciudad,barrio,centro_salud,COUNT(idServicio) AS cantidad_servicios
     FROM vw_servicios_disponibles
@@ -5,19 +17,42 @@ D)SELECT * FROM (SELECT DISTINCT ON (idBarrio)ciudad,barrio,centro_salud,COUNT(i
     ORDER BY idBarrio, cantidad_servicios DESC
 ) 
 ORDER BY ciudad, barrio;
+
+
+-- B) Prueba para un servicio, día y horario específico ('Tomografia', 'Lunes', '10:00')
+SELECT DISTINCT v.centro_salud, v.barrio, v.ciudad
+FROM vw_servicios_disponibles v
+WHERE v.servicio = 'Tomografia'
+  AND (v.idServicio IN (SELECT idServicio FROM HorarioAtencion
+WHERE idServicio IS NOT NULL AND diaSemana = 'Lunes'
+AND horaApertura <= '10:00' AND '10:00' < horaCierre)
+OR (v.idServicio NOT IN (SELECT idServicio FROM HorarioAtencion WHERE idServicio IS NOT NULL)
+AND v.idCentro IN (SELECT idCentro FROM HorarioAtencion
+WHERE idCentro IS NOT NULL AND diaSemana = 'Lunes'
+AND horaApertura <= '10:00' AND '10:00' < horaCierre)))
+ORDER BY v.ciudad, v.centro_salud;
+
+
 -- Vista: vw_historial_visitas
 A)SELECT ciudad, COUNT(DISTINCT idPaciente) AS cantidad_pacientes
 FROM vw_historial_visitas
 WHERE diagnostico = 'Gripe' -- reemplazar por el diagnóstico buscado
 GROUP BY idCiudad, ciudad
 ORDER BY ciudad;
+
+
 C)SELECT * FROM (SELECT DISTINCT ON (idCentro)barrio,centro_salud,medico,COUNT(DISTINCT idPaciente) AS pacientes_atendidos
     FROM vw_historial_visitas
     GROUP BY idBarrio, barrio, idCentro, centro_salud, idProfesional, medico
     ORDER BY idCentro, pacientes_atendidos DESC
 ) 
 ORDER BY barrio, centro_salud;
+
 -- Vista: vw_pacientes_internados
+F)SELECT COUNT(DISTINCT idPaciente) AS cantidad_pacientes
+FROM vw_pacientes_internados
+WHERE atenciones_6_meses < 5;
+
 
 -- Trigger: trg_servicio_medico_a_cargo
 INSERT INTO Servicio VALUES (39, 2, 9, 6);
