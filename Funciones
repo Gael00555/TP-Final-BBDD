@@ -12,7 +12,31 @@ $$
     ORDER BY v.ciudad;
 $$
 LANGUAGE sql;
-
+-- ---------------------------------------------------------------------
+-- B_ Centros de salud que cuenten con un servicio determinado que esten
+-- abiertos a la hora y dia de consulta
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION func_consulta_b(
+    p_servicio VARCHAR,
+    p_dia DiaSemana,
+    p_hora TIME
+)
+RETURNS TABLE (ciudad VARCHAR, barrio VARCHAR, centro_salud VARCHAR)
+AS
+$$
+    SELECT DISTINCT v.ciudad, v.barrio, v.centro_salud
+    FROM vw_servicios_disponibles v
+    WHERE v.servicio = p_servicio
+      AND (v.idServicio IN (SELECT idServicio FROM HorarioAtencion
+                            WHERE idServicio IS NOT NULL AND diaSemana = p_dia
+                              AND horaApertura <= p_hora AND p_hora < horaCierre)
+           OR (v.idServicio NOT IN (SELECT idServicio FROM HorarioAtencion WHERE idServicio IS NOT NULL)
+               AND v.idCentro IN (SELECT idCentro FROM HorarioAtencion
+                                  WHERE idCentro IS NOT NULL AND diaSemana = p_dia
+                                    AND horaApertura <= p_hora AND p_hora < horaCierre)))
+    ORDER BY v.ciudad, v.barrio, v.centro_salud;
+$$
+LANGUAGE sql;
 
 -- ---------------------------------------------------------------------
 -- C_ El medico con mayor cantidad de pacientes atendidos de cada centro,
